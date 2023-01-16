@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build windows
 // +build windows
 
 package walk
@@ -128,5 +129,6 @@ type pushButtonLayoutItem struct {
 }
 
 func (*pushButtonLayoutItem) LayoutFlags() LayoutFlags {
-	return GrowableHorz
+	// return GrowableHorz
+	return 0
 }

@@ -2,11 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build windows
 // +build windows
 
 package walk
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/lxn/win"
@@ -270,6 +272,7 @@ func (li *splitterContainerLayoutItem) PerformLayout() []LayoutResultItem {
 	cb.Width -= margins.HNear + margins.HFar
 	cb.Height -= margins.VNear + margins.VFar
 
+	fmt.Println("PerformLayout -- ClientSize", li.geometry.ClientSize)
 	var space1, space2 int
 	if li.orientation == Horizontal {
 		space1 = cb.Width - li.spaceUnavailableToRegularItems
@@ -278,6 +281,7 @@ func (li *splitterContainerLayoutItem) PerformLayout() []LayoutResultItem {
 		space1 = cb.Height - li.spaceUnavailableToRegularItems
 		space2 = cb.Width
 	}
+	fmt.Println("PerformLayout -- space1, space2", space1, space2)
 
 	type WidgetItem struct {
 		item       *splitterLayoutItem
@@ -323,6 +327,7 @@ func (li *splitterContainerLayoutItem) PerformLayout() []LayoutResultItem {
 
 			size := slItem.size
 			var idealSize Size
+			fmt.Println("PerformLayout -- ?@1. orig size", size)
 			if hfw, ok := item.(HeightForWidther); ok && li.orientation == Vertical && hfw.HasHeightForWidth() {
 				idealSize.Height = hfw.HeightForWidth(space2)
 			} else {
@@ -335,9 +340,11 @@ func (li *splitterContainerLayoutItem) PerformLayout() []LayoutResultItem {
 				}
 			}
 
+			// fmt.Println("PerformLayout -- idealSize", i, idealSize.Width, idealSize.Height)
 			if flags := item.LayoutFlags(); li.orientation == Horizontal {
 				if flags&ShrinkableHorz == 0 {
 					size = maxi(size, idealSize.Width)
+					fmt.Println("PerformLayout -- ?@2. con size", size)
 					if wi != nil {
 						wi.min = maxi(wi.min, size)
 					}
@@ -346,6 +353,7 @@ func (li *splitterContainerLayoutItem) PerformLayout() []LayoutResultItem {
 				}
 				if flags&GrowableHorz == 0 {
 					size = mini(size, idealSize.Width)
+					fmt.Println("PerformLayout -- ?@3. con size", size)
 					if wi != nil {
 						wi.max = mini(wi.max, size)
 					}
@@ -355,6 +363,7 @@ func (li *splitterContainerLayoutItem) PerformLayout() []LayoutResultItem {
 			} else {
 				if flags&ShrinkableVert == 0 {
 					size = maxi(size, idealSize.Height)
+					fmt.Println("PerformLayout -- ?@4. con size", size)
 					if wi != nil {
 						wi.min = maxi(wi.min, size)
 					}
@@ -363,6 +372,7 @@ func (li *splitterContainerLayoutItem) PerformLayout() []LayoutResultItem {
 				}
 				if flags&GrowableVert == 0 {
 					size = mini(size, idealSize.Height)
+					fmt.Println("PerformLayout -- ?@5. con size", size)
 					if wi != nil {
 						wi.max = mini(wi.max, size)
 					}
@@ -373,10 +383,13 @@ func (li *splitterContainerLayoutItem) PerformLayout() []LayoutResultItem {
 
 			totalRegularSize += size
 			sizes[i] = size
+			fmt.Println("PerformLayout -- size[i], size", i, size)
 		} else {
 			sizes[i] = handleWidthPixels
+			fmt.Println("PerformLayout -- size[i], handleWidthPixels", i, handleWidthPixels)
 		}
 	}
+	fmt.Println("PerformLayout -- ?@6. sizes", sizes)
 
 	var resultItems []LayoutResultItem
 
@@ -454,6 +467,7 @@ func (li *splitterContainerLayoutItem) PerformLayout() []LayoutResultItem {
 func (li *splitterContainerLayoutItem) reset() {
 	var anyVisible bool
 
+	fmt.Println("reset -- ClientSize", li.Geometry().ClientSize.Width, li.Geometry().ClientSize.Height)
 	for i, item := range li.children {
 		sli := li.hwnd2Item[item.Handle()]
 
@@ -514,6 +528,7 @@ func (li *splitterContainerLayoutItem) reset() {
 	} else {
 		regularSpace = li.Geometry().ClientSize.Height - li.spaceUnavailableToRegularItems
 	}
+	fmt.Println("?@8 reset -- ClientSize", li.Geometry().ClientSize.Width, li.Geometry().ClientSize.Height)
 
 	stretchTotal := 0
 	for i, item := range li.children {
@@ -533,13 +548,17 @@ func (li *splitterContainerLayoutItem) reset() {
 			continue
 		}
 
+		// layout 的子面板大小由下面两段代码决定
 		sli := li.hwnd2Item[item.Handle()]
 		sli.growth = 0
 		sli.keepSize = false
 		if sli.oldExplicitSize > 0 {
 			sli.size = sli.oldExplicitSize
+			fmt.Println("reset -- ?@9. sli.size", sli.size)
 		} else {
 			sli.size = int(float64(li.StretchFactor(item)) / float64(stretchTotal) * float64(regularSpace))
+			fmt.Println("reset -- ?@10. li.StretchFactor(item), stretchTotal, regularSpace", li.StretchFactor(item), stretchTotal, regularSpace)
+			fmt.Println("reset -- ?@11. sli.size", sli.size)
 		}
 
 		min := minSizes[i]
@@ -554,6 +573,7 @@ func (li *splitterContainerLayoutItem) reset() {
 
 			if li.orientation == Horizontal && flags&GrowableHorz == 0 || li.orientation == Vertical && flags&GrowableVert == 0 {
 				sli.size = min
+				fmt.Println("reset -- ?@12. sli.size", sli.size)
 				sli.keepSize = true
 			}
 		}

@@ -2,11 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build windows
 // +build windows
 
 package walk
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/lxn/win"
@@ -222,7 +224,9 @@ func layoutTree(root ContainerLayoutItem, size Size, cancel chan struct{}, done 
 				clib := container.AsContainerLayoutItemBase()
 
 				clib.geometry.ClientSize = size
+				fmt.Println("layout -- ClientSize", size)
 
+				// PerformLayout 里会首先调用 reset()，来设置子面板的参数。
 				items := container.PerformLayout()
 
 				select {
@@ -240,15 +244,20 @@ func layoutTree(root ContainerLayoutItem, size Size, cancel chan struct{}, done 
 					default:
 					}
 
+					// 这里的 item.Bounds.Size() 就是通过上面 PerformLayout() 里的 reset() 得到的。
+					fmt.Println("Bounds -- Size", item.Bounds.Size())
 					item.Item.Geometry().Size = item.Bounds.Size()
 
 					if childContainer, ok := item.Item.(ContainerLayoutItem); ok {
+						fmt.Println("layout1 -- ClientSize", item.Bounds.Size())
+						// 递归设置子面板
 						layoutSubtree(childContainer, item.Bounds.Size())
 					}
 				}
 			}()
 		}
 
+		fmt.Println("layout0 -- ClientSize", size)
 		layoutSubtree(root, size)
 
 		wg.Wait()

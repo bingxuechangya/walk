@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build windows
 // +build windows
 
 package walk
@@ -699,6 +700,7 @@ func (fb *FormBase) startLayout() bool {
 
 	cli := CreateLayoutItemsForContainer(fb)
 	cli.Geometry().ClientSize = cs
+	fmt.Println("form -- ClientSize", cli.Geometry().ClientSize)
 
 	fb.performLayout <- cli
 
